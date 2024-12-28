@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "pic-grabber",
-  "version": "1.0",
-  "description": "Download any image from any webpage with a single click",
+  "name": "Image Downloader Plus",
+  "version": "1.1",
+  "description": "Download any image from any webpage, including protected and dynamically loaded images",
   "icons": {
     "16": "assets/download-16.png",
     "32": "assets/download-32.png",
@@ -11,13 +11,21 @@
   "permissions": [
     "downloads",
     "scripting",
-    "activeTab"
+    "activeTab",
+    "webRequest"
   ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "js/background.js"
+  },
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
       "css": ["css/styles.css"],
-      "js": ["js/utils.js", "js/content.js"]
+      "js": ["js/utils.js", "js/content.js"],
+      "run_at": "document_start"
     }
   ],
   "action": {
