@@ -2,42 +2,76 @@
     position: relative !important;
     display: inline-block !important;
     max-width: 100% !important;
+    min-width: 50px !important; /* Ensure minimum size for small images */
+    min-height: 50px !important;
 }
 
 .img-container img {
     max-width: 100% !important;
+    display: block !important; /* Prevent inline image gaps */
 }
 
 /* Updated download button positioning */
 .download-btn {
     position: absolute !important;
-    top: initial !important; /* Remove fixed top positioning */
-    right: initial !important; /* Remove fixed right positioning */
-    bottom: 8px !important; /* Start from bottom left */
-    left: 8px !important;
     background: rgba(0, 0, 0, 0.85) !important;
     border-radius: 50% !important;
-    width: 36px !important;
-    height: 36px !important;
+    width: 32px !important; /* Slightly smaller size */
+    height: 32px !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     cursor: pointer !important;
     opacity: 0 !important;
     transition: all 0.2s ease !important;
-    z-index: 999999 !important; /* Lower z-index to avoid conflicts */
+    z-index: 999999 !important;
     border: none !important;
     padding: 0 !important;
     box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3),
                 0 2px 4px rgba(0, 0, 0, 0.2),
                 0 4px 8px rgba(0, 0, 0, 0.1) !important;
+    /* Default position */
+    top: 8px !important;
+    right: 8px !important;
 }
 
-/* Smart positioning class modifiers */
-.download-btn.position-tr { top: 8px !important; right: 8px !important; left: initial !important; bottom: initial !important; }
-.download-btn.position-tl { top: 8px !important; left: 8px !important; right: initial !important; bottom: initial !important; }
-.download-btn.position-br { bottom: 8px !important; right: 8px !important; left: initial !important; top: initial !important; }
-.download-btn.position-bl { bottom: 8px !important; left: 8px !important; right: initial !important; top: initial !important; }
+/* Position variants - will be applied via JavaScript */
+.download-btn.position-tr {
+    top: 8px !important;
+    right: 8px !important;
+    left: auto !important;
+    bottom: auto !important;
+}
+
+.download-btn.position-tl {
+    top: 8px !important;
+    left: 8px !important;
+    right: auto !important;
+    bottom: auto !important;
+}
+
+.download-btn.position-br {
+    bottom: 8px !important;
+    right: 8px !important;
+    top: auto !important;
+    left: auto !important;
+}
+
+.download-btn.position-bl {
+    bottom: 8px !important;
+    left: 8px !important;
+    top: auto !important;
+    right: auto !important;
+}
+
+/* Ensure the button remains visible for small images */
+.img-container.small-image .download-btn {
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    right: auto !important;
+    bottom: auto !important;
+}
 
 .download-btn:hover {
     background: rgba(0, 0, 0, 0.95) !important;
@@ -52,8 +86,8 @@
 }
 
 .download-icon {
-    width: 20px !important;
-    height: 20px !important;
+    width: 16px !important; /* Slightly smaller icon */
+    height: 16px !important;
     stroke: #3B82F6 !important;
     stroke-width: 2.5px !important;
     filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5)) !important;

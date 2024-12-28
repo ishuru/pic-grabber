@@ -64,28 +64,20 @@ class ImageDownloader {
      * @param {Element} root - Root element to scan
      */
     async deepScanElement(root) {
+        if (!root) return;
+
         // Process the root element itself
         await this.processElement(root);
 
-        // Handle shadow DOM
-        if (root.shadowRoot) {
-            await this.deepScanElement(root.shadowRoot);
-        }
-
-        // Scan all child elements including those in closed shadow roots
-        const elements = root.getElementsByTagName("");
+        // Recursively scan child nodes
+        const elements = root.querySelectorAll('*');
         for (const element of elements) {
             await this.processElement(element);
-            // Check for shadow DOM
-            if (element.shadowRoot) {
-                await this.deepScanElement(element.shadowRoot);
-            }
         }
 
-        // Check for elements in dialog, modal, or overlay
-        const dialogs = root.querySelectorAll('dialog, [role="dialog"], [aria-modal="true"]');
-        for (const dialog of dialogs) {
-            await this.deepScanElement(dialog);
+        // Process shadow DOMs if present
+        if (root.shadowRoot) {
+            await this.deepScanElement(root.shadowRoot);
         }
     }
 
@@ -145,16 +137,22 @@ class ImageDownloader {
     }
 
     async scanAllImages() {
+        console.log("Starting full rescan...");
+
+        // Clear processed elements and sources
         this.processedElements = new WeakSet();
         this.processedSources = new Set();
 
-        // Scan main document
+        // Remove all existing buttons
+        this.removeAllButtons();
+
+        // Rescan the main document
         await this.deepScanElement(document.documentElement);
 
-        // Process comments
+        // Check and process any comments for image sources
         this.processComments(document.documentElement);
 
-        // Scan iframes
+        // Scan iframes for dynamically loaded content
         const frames = document.getElementsByTagName('iframe');
         for (const frame of frames) {
             try {
@@ -166,7 +164,7 @@ class ImageDownloader {
             }
         }
 
-        // Check style tags for background images
+        // Rescan elements for dynamically applied styles (e.g., background images)
         const styles = document.getElementsByTagName('style');
         for (const style of styles) {
             const cssText = style.textContent;
@@ -181,6 +179,8 @@ class ImageDownloader {
                 });
             }
         }
+
+        console.log("Finished rescanning.");
     }
 
     async processElement(element) {
@@ -254,9 +254,11 @@ class ImageDownloader {
     }
 
     createDownloadButton(element, imageUrl) {
+        console.log("Creating download button for:", imageUrl);
+
         if (!this.enabled) return;
 
-        // Create container if needed
+        // Create or get container
         let container = element.closest('.img-container');
         if (!container) {
             container = document.createElement('div');
@@ -266,32 +268,83 @@ class ImageDownloader {
         }
 
         // Check for existing download button
-        const existingBtn = container.querySelector('.download-btn');
-        if (existingBtn) return;
+        if (container.querySelector('.download-btn')) {
+            console.log("Download button already exists for:", imageUrl);
+            return;
+        }
 
         // Create download button
         const downloadBtn = document.createElement('button');
+        downloadBtn.className = 'download-btn';
 
-        // Determine best position for download button
-        const positions = ['position-bl', 'position-br', 'position-tl', 'position-tr'];
-        let bestPosition = 'position-bl'; // default to bottom-left
+        // Get element dimensions
+        const rect = element.getBoundingClientRect();
+        const isSmallImage = rect.width < 100 || rect.height < 100;
 
-        // Check for overlapping elements
-        const rect = container.getBoundingClientRect();
-        positions.some(position => {
-            const testElement = document.elementFromPoint(
-                rect.left + (position.includes('r') ? rect.width - 8 : 8),
-                rect.top + (position.includes('t') ? 8 : rect.height - 8)
-            );
-            if (!testElement || container.contains(testElement)) {
-                bestPosition = position;
-                return true;
+        if (isSmallImage) {
+            container.classList.add('small-image');
+        } else {
+            // Determine best position for download button
+            const positions = ['position-tr', 'position-tl', 'position-br', 'position-bl'];
+            let bestPosition = 'position-tr'; // default to top-right
+
+            // Function to check if a point is within the image boundaries
+            const isPointWithinImage = (x, y) => {
+                const imageRect = element.getBoundingClientRect();
+                return x >= imageRect.left && x <= imageRect.right &&
+                       y >= imageRect.top && y <= imageRect.bottom;
+            };
+
+            // Function to check if a position is clear of overlapping elements
+            const isPositionClear = (position) => {
+                const offset = 24; // Half of button size + padding
+                let x, y;
+
+                switch (position) {
+                    case 'position-tr':
+                        x = rect.right - offset;
+                        y = rect.top + offset;
+                        break;
+                    case 'position-tl':
+                        x = rect.left + offset;
+                        y = rect.top + offset;
+                        break;
+                    case 'position-br':
+                        x = rect.right - offset;
+                        y = rect.bottom - offset;
+                        break;
+                    case 'position-bl':
+                        x = rect.left + offset;
+                        y = rect.bottom - offset;
+                        break;
+                }
+
+                // Check if point is within viewport
+                if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) {
+                    return false;
+                }
+
+                // Check if point is within image
+                if (!isPointWithinImage(x, y)) {
+                    return false;
+                }
+
+                const elementAtPoint = document.elementFromPoint(x, y);
+                return elementAtPoint && (elementAtPoint === element || element.contains(elementAtPoint));
+            };
+
+            // Find the best position
+            for (const position of positions) {
+                if (isPositionClear(position)) {
+                    bestPosition = position;
+                    break;
+                }
             }
-            return false;
-        });
 
-        downloadBtn.className = `download-btn ${bestPosition}`;
+            downloadBtn.className = `download-btn ${bestPosition}`;
+        }
 
+        // Add download icon
         downloadBtn.innerHTML = `
             <svg class="download-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -300,30 +353,36 @@ class ImageDownloader {
             </svg>
         `;
 
+        // Add click handler
         downloadBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
             e.preventDefault();
+            console.log("Download button clicked for:", imageUrl);
+
             try {
                 downloadBtn.classList.add('loading');
                 const blob = await ImageUtils.bypassCORS(imageUrl);
                 const blobUrl = URL.createObjectURL(blob);
                 const filename = ImageUtils.generateFileName(imageUrl);
+
                 const link = document.createElement('a');
                 link.href = blobUrl;
                 link.download = filename;
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+
                 setTimeout(() => URL.revokeObjectURL(blobUrl), 100);
             } catch (error) {
-                console.error('Download failed:', error);
-                alert('Failed to download image. Please try again.');
+                console.error("Error downloading image:", error);
+                alert("Failed to download image. Please try again.");
             } finally {
                 downloadBtn.classList.remove('loading');
             }
         });
 
         container.appendChild(downloadBtn);
+        console.log("Download button added for:", imageUrl);
     }
 
     processImage(img) {
@@ -342,42 +401,17 @@ class ImageDownloader {
     }
 
     setupMutationObserver() {
-        const observer = new MutationObserver((mutations) => {
+        const observer = new MutationObserver(async (mutations) => {
             for (const mutation of mutations) {
-                // Handle added nodes
-                mutation.addedNodes.forEach(node => {
+                mutation.addedNodes.forEach(async (node) => {
                     if (node.nodeType === 1) { // Element node
-                        // Check if it's an image element
-                        if (ImageUtils.isImageElement(node)) {
-                            this.processElement(node);
-                        }
-                        // Check for base64 images
-                        const base64Images = this.findBase64Images(node);
-                        base64Images.forEach(img => {
-                            this.processBase64Image(img.element, img.src);
-                        });
-                        // Check child elements
-                        if (node.getElementsByTagName) {
-                            const elements = node.getElementsByTagName(" ");
-                            Array.from(elements).forEach(element => {
-                                if (ImageUtils.isImageElement(element)) {
-                                    this.processElement(element);
-                                }
-                                const childBase64Images = this.findBase64Images(element);
-                                childBase64Images.forEach(img => {
-                                    this.processBase64Image(img.element, img.src);
-                                });
-                            });
-                        }
+                        await this.deepScanElement(node); // Scan the new node
                     }
                 });
-                // Handle attribute changes
+
                 if (mutation.type === 'attributes') {
-                    const element = mutation.target;
-                    const base64Images = this.findBase64Images(element);
-                    base64Images.forEach(img => {
-                        this.processBase64Image(img.element, img.src);
-                    });
+                    const target = mutation.target;
+                    await this.processElement(target); // Process attributes dynamically
                 }
             }
         });
@@ -386,7 +420,7 @@ class ImageDownloader {
             childList: true,
             subtree: true,
             attributes: true,
-            attributeFilter: ['src', 'style', 'data-src']
+            attributeFilter: ['src', 'style', 'data-src'],
         });
     }
 
