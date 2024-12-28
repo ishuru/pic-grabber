@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Image Downloader Plus",
-  "version": "1.2",
+  "version": "1.3",
   "description": "Download any image from any webpage, including protected and dynamically loaded images",
   "icons": {
     "16": "assets/download-16.png",

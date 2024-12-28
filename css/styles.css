@@ -1,80 +1,89 @@
 .img-container {
-  position: relative !important;
-  display: inline-block !important;
-  max-width: 100% !important;
+    position: relative !important;
+    display: inline-block !important;
+    max-width: 100% !important;
 }
 
 .img-container img {
-  max-width: 100% !important;
+    max-width: 100% !important;
 }
 
+/* Updated download button positioning */
 .download-btn {
-  position: absolute !important;
-  top: 8px !important;
-  right: 8px !important;
-  background: rgba(0, 0, 0, 0.85) !important;
-  border-radius: 50% !important;
-  width: 36px !important;
-  height: 36px !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  cursor: pointer !important;
-  opacity: 0 !important;
-  transition: all 0.2s ease !important;
-  z-index: 2147483647 !important;
-  border: none !important;
-  padding: 0 !important;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3),
-              0 2px 4px rgba(0, 0, 0, 0.2),
-              0 4px 8px rgba(0, 0, 0, 0.1) !important;
+    position: absolute !important;
+    top: initial !important; /* Remove fixed top positioning */
+    right: initial !important; /* Remove fixed right positioning */
+    bottom: 8px !important; /* Start from bottom left */
+    left: 8px !important;
+    background: rgba(0, 0, 0, 0.85) !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    opacity: 0 !important;
+    transition: all 0.2s ease !important;
+    z-index: 999999 !important; /* Lower z-index to avoid conflicts */
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.3),
+                0 2px 4px rgba(0, 0, 0, 0.2),
+                0 4px 8px rgba(0, 0, 0, 0.1) !important;
 }
+
+/* Smart positioning class modifiers */
+.download-btn.position-tr { top: 8px !important; right: 8px !important; left: initial !important; bottom: initial !important; }
+.download-btn.position-tl { top: 8px !important; left: 8px !important; right: initial !important; bottom: initial !important; }
+.download-btn.position-br { bottom: 8px !important; right: 8px !important; left: initial !important; top: initial !important; }
+.download-btn.position-bl { bottom: 8px !important; left: 8px !important; right: initial !important; top: initial !important; }
 
 .download-btn:hover {
-  background: rgba(0, 0, 0, 0.95) !important;
-  transform: scale(1.1) !important;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4),
-              0 4px 8px rgba(0, 0, 0, 0.3),
-              0 8px 16px rgba(0, 0, 0, 0.2) !important;
+    background: rgba(0, 0, 0, 0.95) !important;
+    transform: scale(1.1) !important;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4),
+                0 4px 8px rgba(0, 0, 0, 0.3),
+                0 8px 16px rgba(0, 0, 0, 0.2) !important;
 }
 
 .img-container:hover .download-btn {
-  opacity: 1 !important;
+    opacity: 1 !important;
 }
 
 .download-icon {
-  width: 20px !important;
-  height: 20px !important;
-  stroke: #3B82F6 !important; /* Light blue color */
-  stroke-width: 2.5px !important;
-  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5)) !important;
+    width: 20px !important;
+    height: 20px !important;
+    stroke: #3B82F6 !important;
+    stroke-width: 2.5px !important;
+    filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.5)) !important;
 }
 
 /* Loading animation */
 .download-btn.loading {
-  animation: spin 1s linear infinite !important;
+    animation: spin 1s linear infinite !important;
 }
 
 .download-btn.loading .download-icon {
-  opacity: 0.7 !important;
+    opacity: 0.7 !important;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 /* Additional visibility enhancement for dark backgrounds */
 .download-btn::after {
-  content: '' !important;
-  position: absolute !important;
-  top: -2px !important;
-  right: -2px !important;
-  bottom: -2px !important;
-  left: -2px !important;
-  border-radius: 50% !important;
-  background: radial-gradient(circle at center, 
-    rgba(255,255,255,0.1) 0%,
-    rgba(255,255,255,0) 70%) !important;
-  pointer-events: none !important;
+    content: '' !important;
+    position: absolute !important;
+    top: -2px !important;
+    right: -2px !important;
+    bottom: -2px !important;
+    left: -2px !important;
+    border-radius: 50% !important;
+    background: radial-gradient(circle at center,
+                rgba(255,255,255,0.1) 0%,
+                rgba(255,255,255,0) 70%) !important;
+    pointer-events: none !important;
 }
