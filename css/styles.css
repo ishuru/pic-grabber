@@ -1,0 +1,54 @@
+.img-container {
+  position: relative !important;
+  display: inline-block !important;
+  max-width: 100% !important;
+}
+
+.img-container img {
+  max-width: 100% !important;
+}
+
+.download-btn {
+  position: absolute !important;
+  top: 8px !important;
+  right: 8px !important;
+  background: rgba(0, 0, 0, 0.7) !important;
+  border-radius: 50% !important;
+  width: 32px !important;
+  height: 32px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  opacity: 0 !important;
+  transition: all 0.2s ease !important;
+  z-index: 2147483647 !important;
+  border: none !important;
+  padding: 0 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+.download-btn:hover {
+  background: rgba(0, 0, 0, 0.9) !important;
+  transform: scale(1.1) !important;
+}
+
+.img-container:hover .download-btn {
+  opacity: 1 !important;
+}
+
+.download-icon {
+  width: 16px !important;
+  height: 16px !important;
+  filter: invert(1) !important;
+}
+
+/* Loading animation */
+.download-btn.loading {
+  animation: spin 1s linear infinite !important;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
