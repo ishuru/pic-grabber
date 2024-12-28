@@ -1,12 +1,14 @@
+/**
+ * Utility functions for image handling.
+ */
 const ImageUtils = {
   /**
-   * Generate filename for the image
-   * @param {string} url - Image URL or data URI
-   * @returns {string} Generated filename
+   * Generates a filename for an image.
+   * @param {string} url - Image URL or data URI.
+   * @returns {string} Generated filename.
    */
   generateFileName: (url) => {
     if (url.startsWith('data:image')) {
-      // Extract extension from base64 data
       const matches = url.match(/^data:image\/([a-zA-Z0-9-+.]+);base64,/);
       const extension = matches ? matches[1] : 'png';
       return `image_${Date.now()}.${extension}`;
@@ -27,25 +29,21 @@ const ImageUtils = {
   },
 
   /**
-   * Check if string is a base64 encoded image
-   * @param {string} str - String to check
-   * @returns {boolean} Whether string is base64 encoded image
+   * Checks if a string is a base64 encoded image.
+   * @param {string} str - String to check.
+   * @returns {boolean} Whether the string is a base64 encoded image.
    */
   isBase64Image: (str) => {
     if (!str) return false;
-
-    // Check for data URL format
     if (!str.startsWith('data:image/')) return false;
-
-    // Verify base64 format
     const base64Regex = /^data:image\/[a-zA-Z0-9-+.]+;base64,[A-Za-z0-9+/=]+$/;
     return base64Regex.test(str);
   },
 
   /**
-   * Convert base64 to blob
-   * @param {string} base64 - Base64 string
-   * @returns {Blob} Blob object
+   * Converts base64 to a Blob.
+   * @param {string} base64 - Base64 string.
+   * @returns {Blob} Blob object.
    */
   base64ToBlob: (base64) => {
     try {
@@ -67,9 +65,9 @@ const ImageUtils = {
   },
 
   /**
-   * Convert image to blob URL
-   * @param {string} url - Image URL or data URI
-   * @returns {Promise<string>} Blob URL
+   * Converts an image to a Blob URL.
+   * @param {string} url - Image URL or data URI.
+   * @returns {Promise<string>} Blob URL.
    */
   getDownloadableUrl: async (url) => {
     try {
@@ -94,9 +92,9 @@ const ImageUtils = {
   },
 
   /**
-   * Check if an image is valid and loaded
-   * @param {HTMLImageElement} img - Image element to check
-   * @returns {boolean} Whether the image is valid
+   * Checks if an image is valid and loaded.
+   * @param {HTMLImageElement} img - Image element to check.
+   * @returns {boolean} Whether the image is valid.
    */
   isValidImage: (img) => {
     return img.complete &&
@@ -106,30 +104,26 @@ const ImageUtils = {
   },
 
   /**
-   * Get all possible image sources from an element
-   * @param {Element} element - DOM element to check
-   * @returns {Array<string>} Array of image URLs
+   * Gets all possible image sources from an element.
+   * @param {Element} element - DOM element to check.
+   * @returns {Array<string>} Array of image URLs.
    */
   getAllImageSources: (element) => {
     const sources = new Set();
 
-    // Direct src attribute
     if (element.src) sources.add(element.src);
 
-    // Background image
     const bgImage = window.getComputedStyle(element).backgroundImage;
     if (bgImage && bgImage !== 'none') {
       const urls = bgImage.match(/url\(['"]?(.*?)['"]?\)/g) || [];
       urls.forEach(url => sources.add(url.slice(4, -1).replace(/['"]/g, '')));
     }
 
-    // srcset attribute
     if (element.srcset) {
       const srcset = element.srcset.split(',').map(src => src.trim().split(' ')[0]);
       srcset.forEach(src => sources.add(src));
     }
 
-    // data-src and similar attributes
     ['data-src', 'data-original', 'data-lazy', 'data-load'].forEach(attr => {
       const value = element.getAttribute(attr);
       if (value) sources.add(value);
@@ -139,24 +133,23 @@ const ImageUtils = {
   },
 
   /**
-   * Extract canvas image data
-   * @param {HTMLCanvasElement} canvas - Canvas element
-   * @returns {string} Data URL of canvas content
+   * Extracts canvas image data.
+   * @param {HTMLCanvasElement} canvas - Canvas element.
+   * @returns {string} Data URL of canvas content.
    */
   getCanvasImage: (canvas) => {
     try {
       return canvas.toDataURL('image/png');
     } catch (e) {
-      // Handle tainted canvas
       console.warn('Canvas may be tainted:', e);
       return null;
     }
   },
 
   /**
-   * Check if element is or contains an image
-   * @param {Element} element - Element to check
-   * @returns {boolean} Whether element is image-related
+   * Checks if element is or contains an image.
+   * @param {Element} element - Element to check.
+   * @returns {boolean} Whether element is image-related.
    */
   isImageElement: (element) => {
     return (
@@ -168,9 +161,9 @@ const ImageUtils = {
   },
 
   /**
-   * Get MIME type from URL or data URI
-   * @param {string} url - Image URL or data URI
-   * @returns {string} MIME type
+   * Gets MIME type from URL or data URI.
+   * @param {string} url - Image URL or data URI.
+   * @returns {string} MIME type.
    */
   getMimeType: (url) => {
     if (url.startsWith('data:')) {
@@ -197,7 +190,9 @@ const ImageUtils = {
   },
 
   /**
-   * Enhanced CORS bypass with proper content type handling
+   * Enhanced CORS bypass with proper content type handling.
+   * @param {string} url - Image URL.
+   * @returns {Promise<Blob>} The image blob.
    */
   bypassCORS: async (url) => {
     try {
@@ -226,9 +221,9 @@ const ImageUtils = {
   },
 
   /**
-   * Check if element is hidden or in a hidden container
-   * @param {Element} element - Element to check
-   * @returns {boolean} Whether element is truly hidden
+   * Checks if element is hidden or in a hidden container.
+   * @param {Element} element - Element to check.
+   * @returns {boolean} Whether element is truly hidden.
    */
   isElementTrulyHidden: (element) => {
     const style = window.getComputedStyle(element);
@@ -236,14 +231,13 @@ const ImageUtils = {
   },
 
   /**
-   * Extract src from various attributes
-   * @param {Element} element - Element to check
-   * @returns {Array<string>} Array of possible image sources
+   * Extracts src from various attributes.
+   * @param {Element} element - Element to check.
+   * @returns {Array<string>} Array of possible image sources.
    */
   getAllPossibleSources: (element) => {
     const sources = new Set();
 
-    // Common image attributes
     const imageAttributes = [
       'src', 'data-src', 'data-original', 'data-lazy', 'data-load',
       'data-image', 'data-original-src', 'data-hi-res-src', 'data-lazy-src',
@@ -251,7 +245,6 @@ const ImageUtils = {
       'data-img', 'data-zoom-image', 'data-srcset', 'srcset'
     ];
 
-    // Check all attributes
     if (element.attributes) {
       Array.from(element.attributes).forEach(attr => {
         const value = attr.value.trim();
@@ -263,7 +256,6 @@ const ImageUtils = {
       });
     }
 
-    // Check style background
     if (element.style && element.style.backgroundImage) {
       const urls = element.style.backgroundImage.match(/url\(['"]?([^'"]+)['"]?\)/g) || [];
       urls.forEach(url => {
@@ -271,7 +263,6 @@ const ImageUtils = {
       });
     }
 
-    // Check computed style
     const computedStyle = window.getComputedStyle(element);
     if (computedStyle.backgroundImage !== 'none') {
       const urls = computedStyle.backgroundImage.match(/url\(['"]?([^'"]+)['"]?\)/g) || [];
@@ -284,9 +275,9 @@ const ImageUtils = {
   },
 
   /**
-   * Check if string might be an image source
-   * @param {string} str - String to check
-   * @returns {boolean} Whether string might be an image source
+   * Checks if a string might be an image source.
+   * @param {string} str - String to check.
+   * @returns {boolean} Whether string might be an image source.
    */
   isPossibleImageSource: (str) => {
     if (!str) return false;

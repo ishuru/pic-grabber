@@ -4,10 +4,10 @@ A powerful Chrome extension that allows you to download any image from any webpa
 
 ## Features
 
-- Download any visible image with a single click
-- Smart icon positioning to avoid overlapping with website elements
-- Support for protected and dynamically loaded images
-- Works with:
+- **Easy Download**: Download any visible image with a single click.
+- **Smart Icon Positioning**: Avoids overlapping with website elements.
+- **Wide Support**: Handles protected and dynamically loaded images.
+- **Compatibility**: Works with:
   - Regular images (`<img>` tags)
   - Background images (CSS)
   - Canvas elements
@@ -19,25 +19,36 @@ A powerful Chrome extension that allows you to download any image from any webpa
 
 ## Installation
 
-1. Clone this repository or download the zip file
-2. Open Chrome and go to `chrome://extensions/`
-3. Enable "Developer mode" in the top right corner
-4. Click "Load unpacked" and select the extension directory
+1. **Clone the Repository**:
+   - Open your terminal or command prompt.
+   - Run the following command to clone the repository:
+     ```sh
+     git clone https://github.com/venopyx/pic-grabber.git
+     ```
+   - Alternatively, you can download the zip file from [here](https://github.com/venopyx/pic-grabber/archive/refs/heads/main.zip) and extract it.
+
+2. **Load the Extension in Chrome**:
+   - Open Chrome and go to `chrome://extensions/`.
+   - Enable "Developer mode" by toggling the switch in the top right corner.
+   - Click the "Load unpacked" button and select the directory where you cloned or extracted the extension.
 
 ## Usage
 
-- Click the extension icon in the toolbar to scan the current page for images
-- Hover over any image to reveal the download button
-- Click the download button to save the image
+1. **Scan for Images**:
+   - Click the extension icon in the toolbar to scan the current page for images.
+
+2. **Download Images**:
+   - Hover over any image on the page to reveal the download button.
+   - Click the download button to save the image to your device.
 
 ## Smart Icon Positioning
 
 The extension implements smart icon positioning to avoid conflicts with website elements:
 
-- Default position: Bottom-left corner of images
-- Automatic repositioning if conflicts are detected
-- Four possible positions (bottom-left, bottom-right, top-left, top-right)
-- Lower z-index to avoid overlapping with critical website elements
+- **Default Position**: Bottom-left corner of images.
+- **Automatic Repositioning**: If conflicts are detected, the icon will automatically reposition.
+- **Four Possible Positions**: Bottom-left, bottom-right, top-left, top-right.
+- **Lower z-index**: To avoid overlapping with critical website elements.
 
 ## Technical Details
 
@@ -58,16 +69,23 @@ The extension implements smart icon positioning to avoid conflicts with website 
 ```
 
 ### Permissions
-- `downloads`: For saving images
-- `scripting`: For injecting content scripts
-- `activeTab`: For accessing the current tab
-- `webRequest`: For handling image requests
+- `downloads`: For saving images.
+- `scripting`: For injecting content scripts.
+- `activeTab`: For accessing the current tab.
+- `webRequest`: For handling image requests.
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Submit a pull request
+1. **Fork the Repository**:
+   - Click the "Fork" button at the top right of the [repository page](https://github.com/venopyx/pic-grabber).
+
+2. **Create a Feature Branch**:
+   - Create a new branch for your feature or bug fix.
+   - Make your changes and commit them.
+
+3. **Submit a Pull Request**:
+   - Push your branch to your fork.
+   - Open a pull request to the main repository.
 
 ## License
 
@@ -77,19 +95,19 @@ MIT License - feel free to use and modify as needed.
 
 ### Common Issues
 
-1. Icon overlapping with website elements
-   - The extension uses smart positioning to avoid conflicts
-   - Icons will automatically reposition if conflicts are detected
-   - Default position is bottom-left to minimize interference
+1. **Icon Overlapping with Website Elements**:
+   - The extension uses smart positioning to avoid conflicts.
+   - Icons will automatically reposition if conflicts are detected.
+   - The default position is bottom-left to minimize interference.
 
-2. Images not downloading
-   - Check if the image is fully loaded
-   - Some websites may require authentication
-   - Check browser console for error messages
+2. **Images Not Downloading**:
+   - Ensure the image is fully loaded.
+   - Some websites may require authentication.
+   - Check the browser console for error messages.
 
 ### Reporting Issues
 
-Please report issues through GitHub issues with:
+Please report issues through GitHub issues with the following details:
 - Browser version
 - Steps to reproduce
 - Screenshot if possible

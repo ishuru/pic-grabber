@@ -1,18 +1,23 @@
+/**
+ * Manages image downloading functionality.
+ */
 class ImageDownloader {
     constructor() {
         this.processedElements = new WeakSet();
         this.processedSources = new Set();
-        this.enabled = true; // Default to enabled
+        this.enabled = true; 
         this.setupMutationObserver();
         this.setupMessageListener();
         this.setupEventCapture();
         this.initializeState();
     }
 
+    /**
+     * Initializes the extension's state from local storage.
+     */
     async initializeState() {
-        // Get initial state from storage
         const result = await chrome.storage.local.get(['enabled']);
-        this.enabled = result.enabled !== false; // Default to true if not set
+        this.enabled = result.enabled !== false; 
         if (this.enabled) {
             this.processExistingImages();
         } else {
@@ -20,22 +25,25 @@ class ImageDownloader {
         }
     }
 
+    /**
+     * Removes all download buttons from the page.
+     */
     removeAllButtons() {
         const buttons = document.querySelectorAll('.download-btn');
         buttons.forEach(button => button.remove());
     }
 
+    /**
+     * Sets up event listeners for right-click and canvas events.
+     */
     setupEventCapture() {
-        // Capture right-click events
         document.addEventListener('contextmenu', (e) => {
-            // Allow right-click but prevent default only if it's our download button
             if (e.target.closest('.download-btn')) {
                 e.stopPropagation();
                 return;
             }
         }, true);
 
-        // Monitor canvas changes
         document.addEventListener('mouseup', (e) => {
             const canvas = e.target.closest('canvas');
             if (canvas && !this.processedElements.has(canvas)) {
@@ -44,6 +52,9 @@ class ImageDownloader {
         }, true);
     }
 
+    /**
+     * Sets up a message listener for communication with the background script.
+     */
     setupMessageListener() {
         chrome.runtime.onMessage.addListener((message) => {
             if (message.type === 'scanImages' && this.enabled) {
@@ -60,30 +71,24 @@ class ImageDownloader {
     }
 
     /**
-     * Deep scan DOM for elements
-     * @param {Element} root - Root element to scan
+     * Recursively scans a DOM element for images.
+     * @param {Element} root - The root element to scan.
      */
     async deepScanElement(root) {
         if (!root) return;
-
-        // Process the root element itself
         await this.processElement(root);
-
-        // Recursively scan child nodes
         const elements = root.querySelectorAll('*');
         for (const element of elements) {
             await this.processElement(element);
         }
-
-        // Process shadow DOMs if present
         if (root.shadowRoot) {
             await this.deepScanElement(root.shadowRoot);
         }
     }
 
     /**
-     * Process comments for potential image sources
-     * @param {Element} root - Root element to scan
+     * Processes comments for potential image sources.
+     * @param {Element} root - The root element to scan.
      */
     processComments(root) {
         const iterator = document.createNodeIterator(
@@ -108,18 +113,16 @@ class ImageDownloader {
     }
 
     /**
-     * Create floating download button for sources without elements
-     * @param {Node} node - Reference node
-     * @param {string} src - Image source
+     * Creates a floating download button for sources without elements.
+     * @param {Node} node - Reference node.
+     * @param {string} src - Image source.
      */
     createFloatingDownloadButton(node, src) {
-        // Create a container that follows the text
         const container = document.createElement('span');
         container.className = 'img-container inline-img-container';
         container.style.position = 'relative';
         container.style.display = 'inline-block';
 
-        // Add a small preview
         const preview = document.createElement('img');
         preview.src = src;
         preview.style.maxWidth = '50px';
@@ -127,32 +130,24 @@ class ImageDownloader {
         preview.style.verticalAlign = 'middle';
         container.appendChild(preview);
 
-        // Create download button
         this.createDownloadButton(container, src);
 
-        // Insert after the node
         if (node.parentNode) {
             node.parentNode.insertBefore(container, node.nextSibling);
         }
     }
 
+    /**
+     * Scans all images on the page and adds download buttons.
+     */
     async scanAllImages() {
         console.log("Starting full rescan...");
-
-        // Clear processed elements and sources
         this.processedElements = new WeakSet();
         this.processedSources = new Set();
-
-        // Remove all existing buttons
         this.removeAllButtons();
-
-        // Rescan the main document
         await this.deepScanElement(document.documentElement);
-
-        // Check and process any comments for image sources
         this.processComments(document.documentElement);
 
-        // Scan iframes for dynamically loaded content
         const frames = document.getElementsByTagName('iframe');
         for (const frame of frames) {
             try {
@@ -164,7 +159,6 @@ class ImageDownloader {
             }
         }
 
-        // Rescan elements for dynamically applied styles (e.g., background images)
         const styles = document.getElementsByTagName('style');
         for (const style of styles) {
             const cssText = style.textContent;
@@ -183,11 +177,14 @@ class ImageDownloader {
         console.log("Finished rescanning.");
     }
 
+    /**
+     * Processes a single DOM element for images.
+     * @param {Element} element - The element to process.
+     */
     async processElement(element) {
         if (this.processedElements.has(element)) return;
         this.processedElements.add(element);
 
-        // Get all possible sources
         const sources = ImageUtils.getAllPossibleSources(element);
         for (const src of sources) {
             if (!this.processedSources.has(src)) {
@@ -199,7 +196,6 @@ class ImageDownloader {
                 }
             }
 
-            // Check for canvas elements
             if (element.tagName === 'CANVAS') {
                 const dataUrl = element.toDataURL('image/png');
                 if (!this.processedSources.has(dataUrl)) {
@@ -208,7 +204,6 @@ class ImageDownloader {
                 }
             }
 
-            // Check element's computed styles
             const computedStyle = window.getComputedStyle(element);
             const properties = ['backgroundImage', 'content', 'mask', 'webkitMask'];
             for (const prop of properties) {
@@ -229,6 +224,10 @@ class ImageDownloader {
         }
     }
 
+    /**
+     * Processes a canvas element to extract its image data.
+     * @param {HTMLCanvasElement} canvas - The canvas element.
+     */
     processCanvas(canvas) {
         const imageData = ImageUtils.getCanvasImage(canvas);
         if (imageData) {
@@ -236,14 +235,21 @@ class ImageDownloader {
         }
     }
 
+    /**
+     * Processes an SVG element.
+     * @param {SVGSVGElement} svg - The SVG element.
+     */
     processSVG(svg) {
-        // Convert SVG to data URL
         const svgData = new XMLSerializer().serializeToString(svg);
         const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
         const url = URL.createObjectURL(svgBlob);
         this.createDownloadButton(svg, url);
     }
 
+    /**
+     * Processes background images of an element.
+     * @param {Element} element - The element to process.
+     */
     processBackgroundImage(element) {
         const bgImage = window.getComputedStyle(element).backgroundImage;
         const urls = bgImage.match(/url\("?(.*?)["']?\)/g) || [];
@@ -253,12 +259,15 @@ class ImageDownloader {
         });
     }
 
+    /**
+     * Creates a download button for an image.
+     * @param {Element} element - The element to attach the button to.
+     * @param {string} imageUrl - The URL of the image.
+     */
     createDownloadButton(element, imageUrl) {
         console.log("Creating download button for:", imageUrl);
-
         if (!this.enabled) return;
 
-        // Create or get container
         let container = element.closest('.img-container');
         if (!container) {
             container = document.createElement('div');
@@ -267,37 +276,31 @@ class ImageDownloader {
             container.appendChild(element);
         }
 
-        // Check for existing download button
         if (container.querySelector('.download-btn')) {
             console.log("Download button already exists for:", imageUrl);
             return;
         }
 
-        // Create download button
         const downloadBtn = document.createElement('button');
         downloadBtn.className = 'download-btn';
 
-        // Get element dimensions
         const rect = element.getBoundingClientRect();
         const isSmallImage = rect.width < 100 || rect.height < 100;
 
         if (isSmallImage) {
             container.classList.add('small-image');
         } else {
-            // Determine best position for download button
             const positions = ['position-tr', 'position-tl', 'position-br', 'position-bl'];
-            let bestPosition = 'position-tr'; // default to top-right
+            let bestPosition = 'position-tr'; 
 
-            // Function to check if a point is within the image boundaries
             const isPointWithinImage = (x, y) => {
                 const imageRect = element.getBoundingClientRect();
                 return x >= imageRect.left && x <= imageRect.right &&
                        y >= imageRect.top && y <= imageRect.bottom;
             };
 
-            // Function to check if a position is clear of overlapping elements
             const isPositionClear = (position) => {
-                const offset = 24; // Half of button size + padding
+                const offset = 24; 
                 let x, y;
 
                 switch (position) {
@@ -319,12 +322,10 @@ class ImageDownloader {
                         break;
                 }
 
-                // Check if point is within viewport
                 if (x < 0 || y < 0 || x > window.innerWidth || y > window.innerHeight) {
                     return false;
                 }
 
-                // Check if point is within image
                 if (!isPointWithinImage(x, y)) {
                     return false;
                 }
@@ -333,7 +334,6 @@ class ImageDownloader {
                 return elementAtPoint && (elementAtPoint === element || element.contains(elementAtPoint));
             };
 
-            // Find the best position
             for (const position of positions) {
                 if (isPositionClear(position)) {
                     bestPosition = position;
@@ -344,7 +344,6 @@ class ImageDownloader {
             downloadBtn.className = `download-btn ${bestPosition}`;
         }
 
-        // Add download icon
         downloadBtn.innerHTML = `
             <svg class="download-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -353,7 +352,6 @@ class ImageDownloader {
             </svg>
         `;
 
-        // Add click handler
         downloadBtn.addEventListener('click', async (e) => {
             e.stopPropagation();
             e.preventDefault();
@@ -385,6 +383,10 @@ class ImageDownloader {
         console.log("Download button added for:", imageUrl);
     }
 
+    /**
+     * Processes an image element.
+     * @param {HTMLImageElement} img - The image element.
+     */
     processImage(img) {
         if (this.processedElements.has(img) || !ImageUtils.isValidImage(img)) {
             return;
@@ -393,6 +395,9 @@ class ImageDownloader {
         this.createDownloadButton(img, img.src);
     }
 
+    /**
+     * Processes existing images on the page.
+     */
     processExistingImages() {
         const images = document.getElementsByTagName('img');
         for (const img of images) {
@@ -400,18 +405,21 @@ class ImageDownloader {
         }
     }
 
+    /**
+     * Sets up a mutation observer to detect changes in the DOM.
+     */
     setupMutationObserver() {
         const observer = new MutationObserver(async (mutations) => {
             for (const mutation of mutations) {
                 mutation.addedNodes.forEach(async (node) => {
-                    if (node.nodeType === 1) { // Element node
-                        await this.deepScanElement(node); // Scan the new node
+                    if (node.nodeType === 1) { 
+                        await this.deepScanElement(node); 
                     }
                 });
 
                 if (mutation.type === 'attributes') {
                     const target = mutation.target;
-                    await this.processElement(target); // Process attributes dynamically
+                    await this.processElement(target); 
                 }
             }
         });
@@ -424,9 +432,13 @@ class ImageDownloader {
         });
     }
 
+    /**
+     * Finds base64 encoded images within an element.
+     * @param {Element} element - The element to search.
+     * @returns {Array<{element: Element, src: string}>} Array of base64 images.
+     */
     findBase64Images(element) {
         const images = [];
-        // Check element attributes
         if (element.attributes) {
             Array.from(element.attributes).forEach(attr => {
                 if (ImageUtils.isBase64Image(attr.value)) {
@@ -437,7 +449,6 @@ class ImageDownloader {
                 }
             });
         }
-        // Check background-image CSS
         const style = window.getComputedStyle(element);
         const backgroundImage = style.backgroundImage;
         if (backgroundImage) {
@@ -449,7 +460,6 @@ class ImageDownloader {
                 });
             }
         }
-        // Check inline style
         if (element.style && element.style.backgroundImage) {
             const base64Match = element.style.backgroundImage.match(/url\("?(data:image\n[^"]+)"?\)/);
             if (base64Match && ImageUtils.isBase64Image(base64Match[1])) {
@@ -462,15 +472,18 @@ class ImageDownloader {
         return images;
     }
 
+    /**
+     * Processes a base64 encoded image.
+     * @param {Element} element - The element containing the image.
+     * @param {string} base64Src - The base64 encoded image data.
+     */
     async processBase64Image(element, base64Src) {
         if (this.processedElements.has(element)) return;
         this.processedElements.add(element);
-        // Create container and download button
         this.createDownloadButton(element, base64Src);
     }
 }
 
-// Initialize with immediate scan
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         const downloader = new ImageDownloader();
