@@ -1,6 +1,7 @@
 class ImageDownloader {
   constructor() {
     this.processedElements = new WeakSet();
+    this.processedSources = new Set();
     this.setupMutationObserver();
     this.setupMessageListener();
     this.setupEventCapture();
@@ -34,98 +35,177 @@ class ImageDownloader {
     });
   }
 
-  findBase64Images(element) {
-    const images = [];
+  /**
+   * Deep scan DOM for elements
+   * @param {Element} root - Root element to scan
+   */
+  async deepScanElement(root) {
+    // Process the root element itself
+    await this.processElement(root);
 
-    // Check element attributes
-    if (element.attributes) {
-      Array.from(element.attributes).forEach(attr => {
-        if (ImageUtils.isBase64Image(attr.value)) {
-          images.push({
-            element: element,
-            src: attr.value
-          });
-        }
-      });
+    // Handle shadow DOM
+    if (root.shadowRoot) {
+      await this.deepScanElement(root.shadowRoot);
     }
 
-    // Check background-image CSS
-    const style = window.getComputedStyle(element);
-    const backgroundImage = style.backgroundImage;
-    if (backgroundImage) {
-      const base64Match = backgroundImage.match(/url\("?(data:image\/[^"]+)"?\)/);
-      if (base64Match && ImageUtils.isBase64Image(base64Match[1])) {
-        images.push({
-          element: element,
-          src: base64Match[1]
-        });
+    // Scan all child elements including those in closed shadow roots
+    const elements = root.getElementsByTagName('*');
+    for (const element of elements) {
+      await this.processElement(element);
+
+      // Check for shadow DOM
+      if (element.shadowRoot) {
+        await this.deepScanElement(element.shadowRoot);
       }
     }
 
-    // Check inline style
-    if (element.style && element.style.backgroundImage) {
-      const base64Match = element.style.backgroundImage.match(/url\("?(data:image\/[^"]+)"?\)/);
-      if (base64Match && ImageUtils.isBase64Image(base64Match[1])) {
-        images.push({
-          element: element,
-          src: base64Match[1]
+    // Check for elements in dialog, modal, or overlay
+    const dialogs = root.querySelectorAll('dialog, [role="dialog"], [aria-modal="true"]');
+    for (const dialog of dialogs) {
+      await this.deepScanElement(dialog);
+    }
+  }
+
+  /**
+   * Process comments for potential image sources
+   * @param {Element} root - Root element to scan
+   */
+  processComments(root) {
+    const iterator = document.createNodeIterator(
+      root,
+      NodeFilter.SHOW_COMMENT,
+      null,
+      false
+    );
+
+    let comment;
+    while (comment = iterator.nextNode()) {
+      const text = comment.textContent;
+      const urls = text.match(/(https?:\/\/[^)\s]+\.(?:jpg|jpeg|png|gif|webp|svg|avif))/gi);
+      if (urls) {
+        urls.forEach(url => {
+          if (!this.processedSources.has(url)) {
+            this.processedSources.add(url);
+            this.createFloatingDownloadButton(comment, url);
+          }
         });
       }
     }
+  }
 
-    return images;
+  /**
+   * Create floating download button for sources without elements
+   * @param {Node} node - Reference node
+   * @param {string} src - Image source
+   */
+  createFloatingDownloadButton(node, src) {
+    // Create a container that follows the text
+    const container = document.createElement('span');
+    container.className = 'img-container inline-img-container';
+    container.style.position = 'relative';
+    container.style.display = 'inline-block';
+
+    // Add a small preview
+    const preview = document.createElement('img');
+    preview.src = src;
+    preview.style.maxWidth = '50px';
+    preview.style.maxHeight = '50px';
+    preview.style.verticalAlign = 'middle';
+    container.appendChild(preview);
+
+    // Create download button
+    this.createDownloadButton(container, src);
+
+    // Insert after the node
+    if (node.parentNode) {
+      node.parentNode.insertBefore(container, node.nextSibling);
+    }
   }
 
   async scanAllImages() {
     this.processedElements = new WeakSet();
+    this.processedSources = new Set();
 
-    // Scan all elements
-    const elements = document.querySelectorAll('*');
-    for (const element of elements) {
-      // Process regular images
-      if (ImageUtils.isImageElement(element)) {
-        await this.processElement(element);
-      }
+    // Scan main document
+    await this.deepScanElement(document.documentElement);
 
-      // Find and process base64 images
-      const base64Images = this.findBase64Images(element);
-      for (const img of base64Images) {
-        await this.processBase64Image(img.element, img.src);
+    // Process comments
+    this.processComments(document.documentElement);
+
+    // Scan iframes
+    const frames = document.getElementsByTagName('iframe');
+    for (const frame of frames) {
+      try {
+        const frameDoc = frame.contentDocument || frame.contentWindow.document;
+        await this.deepScanElement(frameDoc.documentElement);
+        this.processComments(frameDoc.documentElement);
+      } catch (e) {
+        console.warn('Cannot access iframe content:', e);
       }
     }
 
-    // Check for React/Vue rendered images
-    this.scanShadowDOM(document.documentElement);
-  }
-
-  async processBase64Image(element, base64Src) {
-    if (this.processedElements.has(element)) return;
-    this.processedElements.add(element);
-
-    // Create container and download button
-    this.createDownloadButton(element, base64Src);
+    // Check style tags for background images
+    const styles = document.getElementsByTagName('style');
+    for (const style of styles) {
+      const cssText = style.textContent;
+      const urls = cssText.match(/url\(['"]?([^'"]+\.(?:jpg|jpeg|png|gif|webp|svg|avif))['"]?\)/gi);
+      if (urls) {
+        urls.forEach(url => {
+          const cleanUrl = url.slice(4, -1).replace(/['"]/g, '');
+          if (!this.processedSources.has(cleanUrl)) {
+            this.processedSources.add(cleanUrl);
+            this.createFloatingDownloadButton(style, cleanUrl);
+          }
+        });
+      }
+    }
   }
 
   async processElement(element) {
     if (this.processedElements.has(element)) return;
     this.processedElements.add(element);
 
-    if (element.tagName === 'IMG') {
-      // Check for base64 src
-      if (ImageUtils.isBase64Image(element.src)) {
-        this.processBase64Image(element, element.src);
-      } else {
-        this.processImage(element);
+    // Get all possible sources
+    const sources = ImageUtils.getAllPossibleSources(element);
+
+    for (const src of sources) {
+      if (!this.processedSources.has(src)) {
+        this.processedSources.add(src);
+
+        if (element.tagName === 'IMG') {
+          this.createDownloadButton(element, src);
+        } else {
+          this.createFloatingDownloadButton(element, src);
+        }
       }
-    } else if (element.tagName === 'CANVAS') {
-      this.processCanvas(element);
-    } else if (element.tagName === 'SVG') {
-      this.processSVG(element);
-    } else {
-      // Handle background images
-      const base64Images = this.findBase64Images(element);
-      for (const img of base64Images) {
-        await this.processBase64Image(img.element, img.src);
+    }
+
+    // Check for canvas elements
+    if (element.tagName === 'CANVAS') {
+      const dataUrl = element.toDataURL('image/png');
+      if (!this.processedSources.has(dataUrl)) {
+        this.processedSources.add(dataUrl);
+        this.createDownloadButton(element, dataUrl);
+      }
+    }
+
+    // Check element's computed styles
+    const computedStyle = window.getComputedStyle(element);
+    const properties = ['backgroundImage', 'content', 'mask', 'webkitMask'];
+
+    for (const prop of properties) {
+      const value = computedStyle[prop];
+      if (value && value !== 'none') {
+        const urls = value.match(/url\(['"]?([^'"]+)['"]?\)/g);
+        if (urls) {
+          urls.forEach(url => {
+            const cleanUrl = url.slice(4, -1).replace(/['"]/g, '');
+            if (!this.processedSources.has(cleanUrl) && ImageUtils.isPossibleImageSource(cleanUrl)) {
+              this.processedSources.add(cleanUrl);
+              this.createFloatingDownloadButton(element, cleanUrl);
+            }
+          });
+        }
       }
     }
   }
@@ -272,23 +352,64 @@ class ImageDownloader {
     });
   }
 
-  scanShadowDOM(root) {
-    // Handle shadow DOM
-    if (root.shadowRoot) {
-      const elements = root.shadowRoot.querySelectorAll('*');
-      elements.forEach(element => {
-        if (ImageUtils.isImageElement(element)) {
-          this.processElement(element);
+  findBase64Images(element) {
+    const images = [];
+
+    // Check element attributes
+    if (element.attributes) {
+      Array.from(element.attributes).forEach(attr => {
+        if (ImageUtils.isBase64Image(attr.value)) {
+          images.push({
+            element: element,
+            src: attr.value
+          });
         }
-        this.scanShadowDOM(element);
       });
     }
+
+    // Check background-image CSS
+    const style = window.getComputedStyle(element);
+    const backgroundImage = style.backgroundImage;
+    if (backgroundImage) {
+      const base64Match = backgroundImage.match(/url\("?(data:image\/[^"]+)"?\)/);
+      if (base64Match && ImageUtils.isBase64Image(base64Match[1])) {
+        images.push({
+          element: element,
+          src: base64Match[1]
+        });
+      }
+    }
+
+    // Check inline style
+    if (element.style && element.style.backgroundImage) {
+      const base64Match = element.style.backgroundImage.match(/url\("?(data:image\/[^"]+)"?\)/);
+      if (base64Match && ImageUtils.isBase64Image(base64Match[1])) {
+        images.push({
+          element: element,
+          src: base64Match[1]
+        });
+      }
+    }
+
+    return images;
+  }
+
+  async processBase64Image(element, base64Src) {
+    if (this.processedElements.has(element)) return;
+    this.processedElements.add(element);
+
+    // Create container and download button
+    this.createDownloadButton(element, base64Src);
   }
 }
 
-// Initialize
+// Initialize with immediate scan
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => new ImageDownloader());
+  document.addEventListener('DOMContentLoaded', () => {
+    const downloader = new ImageDownloader();
+    downloader.scanAllImages();
+  });
 } else {
-  new ImageDownloader();
+  const downloader = new ImageDownloader();
+  downloader.scanAllImages();
 }

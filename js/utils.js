@@ -223,6 +223,77 @@ const ImageUtils = {
         );
       });
     }
+  },
+
+  /**
+   * Check if element is hidden or in a hidden container
+   * @param {Element} element - Element to check
+   * @returns {boolean} Whether element is truly hidden
+   */
+  isElementTrulyHidden: (element) => {
+    const style = window.getComputedStyle(element);
+    return style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0';
+  },
+
+  /**
+   * Extract src from various attributes
+   * @param {Element} element - Element to check
+   * @returns {Array<string>} Array of possible image sources
+   */
+  getAllPossibleSources: (element) => {
+    const sources = new Set();
+
+    // Common image attributes
+    const imageAttributes = [
+      'src', 'data-src', 'data-original', 'data-lazy', 'data-load',
+      'data-image', 'data-original-src', 'data-hi-res-src', 'data-lazy-src',
+      'data-actual-src', 'data-full-src', 'data-bg', 'data-background',
+      'data-img', 'data-zoom-image', 'data-srcset', 'srcset'
+    ];
+
+    // Check all attributes
+    if (element.attributes) {
+      Array.from(element.attributes).forEach(attr => {
+        const value = attr.value.trim();
+        if (value && (value.match(/\.(jpg|jpeg|png|gif|webp|svg|avif)$/i) ||
+            value.startsWith('data:image/') ||
+            value.match(/^blob:/i))) {
+          sources.add(value);
+        }
+      });
+    }
+
+    // Check style background
+    if (element.style && element.style.backgroundImage) {
+      const urls = element.style.backgroundImage.match(/url\(['"]?([^'"]+)['"]?\)/g) || [];
+      urls.forEach(url => {
+        sources.add(url.slice(4, -1).replace(/['"]/g, ''));
+      });
+    }
+
+    // Check computed style
+    const computedStyle = window.getComputedStyle(element);
+    if (computedStyle.backgroundImage !== 'none') {
+      const urls = computedStyle.backgroundImage.match(/url\(['"]?([^'"]+)['"]?\)/g) || [];
+      urls.forEach(url => {
+        sources.add(url.slice(4, -1).replace(/['"]/g, ''));
+      });
+    }
+
+    return Array.from(sources);
+  },
+
+  /**
+   * Check if string might be an image source
+   * @param {string} str - String to check
+   * @returns {boolean} Whether string might be an image source
+   */
+  isPossibleImageSource: (str) => {
+    if (!str) return false;
+    return str.match(/\.(jpg|jpeg|png|gif|webp|svg|avif)$/i) ||
+           str.startsWith('data:image/') ||
+           str.match(/^blob:/i) ||
+           str.match(/^https?:\/\/[^/]+\/[^?]+\?(.*&)?image/i);
   }
 };
 
