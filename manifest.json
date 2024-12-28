@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "pic-grabber",
+  "version": "1.0",
+  "description": "Download any image from any webpage with a single click",
+  "icons": {
+    "16": "assets/download-16.png",
+    "32": "assets/download-32.png",
+    "48": "assets/download-48.png"
+  },
+  "permissions": [
+    "downloads",
+    "scripting",
+    "activeTab"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "css": ["css/styles.css"],
+      "js": ["js/utils.js", "js/content.js"]
+    }
+  ],
+  "action": {
+    "default_title": "Image Downloader Plus",
+    "default_icon": {
+      "16": "assets/download-16.png",
+      "32": "assets/download-32.png",
+      "48": "assets/download-48.png"
+    }
+  }
+}
