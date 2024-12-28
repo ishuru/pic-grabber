@@ -2,10 +2,27 @@ class ImageDownloader {
     constructor() {
         this.processedElements = new WeakSet();
         this.processedSources = new Set();
+        this.enabled = true; // Default to enabled
         this.setupMutationObserver();
         this.setupMessageListener();
         this.setupEventCapture();
-        this.processExistingImages();
+        this.initializeState();
+    }
+
+    async initializeState() {
+        // Get initial state from storage
+        const result = await chrome.storage.local.get(['enabled']);
+        this.enabled = result.enabled !== false; // Default to true if not set
+        if (this.enabled) {
+            this.processExistingImages();
+        } else {
+            this.removeAllButtons();
+        }
+    }
+
+    removeAllButtons() {
+        const buttons = document.querySelectorAll('.download-btn');
+        buttons.forEach(button => button.remove());
     }
 
     setupEventCapture() {
@@ -29,8 +46,15 @@ class ImageDownloader {
 
     setupMessageListener() {
         chrome.runtime.onMessage.addListener((message) => {
-            if (message.type === 'scanImages') {
+            if (message.type === 'scanImages' && this.enabled) {
                 this.scanAllImages();
+            } else if (message.type === 'toggleExtension') {
+                this.enabled = message.enabled;
+                if (!this.enabled) {
+                    this.removeAllButtons();
+                } else {
+                    this.scanAllImages();
+                }
             }
         });
     }
@@ -230,6 +254,8 @@ class ImageDownloader {
     }
 
     createDownloadButton(element, imageUrl) {
+        if (!this.enabled) return;
+
         // Create container if needed
         let container = element.closest('.img-container');
         if (!container) {
@@ -239,9 +265,12 @@ class ImageDownloader {
             container.appendChild(element);
         }
 
+        // Check for existing download button
+        const existingBtn = container.querySelector('.download-btn');
+        if (existingBtn) return;
+
         // Create download button
         const downloadBtn = document.createElement('button');
-        downloadBtn.className = 'download-btn';
 
         // Determine best position for download button
         const positions = ['position-bl', 'position-br', 'position-tl', 'position-tr'];
@@ -411,9 +440,7 @@ class ImageDownloader {
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         const downloader = new ImageDownloader();
-        downloader.scanAllImages();
     });
 } else {
     const downloader = new ImageDownloader();
-    downloader.scanAllImages();
 }
