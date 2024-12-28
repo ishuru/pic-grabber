@@ -1,6 +1,6 @@
 {
     "manifest_version": 3,
-    "name": "Image Downloader Plus",
+    "name": "Pic-Grabber",
     "version": "1.5",
     "description": "Download any image from any webpage, including protected and dynamically loaded images",
     "icons": {
@@ -30,7 +30,7 @@
         }
     ],
     "action": {
-        "default_title": "Image Downloader Plus",
+        "default_title": "Pic-Grabber",
         "default_popup": "popup.html",
         "default_icon": {
             "16": "assets/download-16.png",
