@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
     const toggleSwitch = document.getElementById('toggleExtension');
     const recrawlBtn = document.getElementById('recrawlBtn');
+    const openSidebarBtn = document.getElementById('openSidebarBtn');
     const statusDiv = document.getElementById('status');
 
     chrome.storage.local.get(['enabled'], function(result) {
@@ -28,5 +29,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 statusDiv.textContent = 'Scan complete';
             }, 1500);
         });
+    });
+
+    openSidebarBtn.addEventListener('click', async function() {
+        try {
+            // Get the current tab
+            const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+            
+            // Open the side panel for the current tab
+            await chrome.sidePanel.open({ tabId: tab.id });
+            
+            // Trigger image scan
+            chrome.tabs.sendMessage(tab.id, { type: 'scanImagesForSidebar' });
+            
+            // Close the popup
+            window.close();
+        } catch (error) {
+            console.error('Error opening side panel:', error);
+            statusDiv.textContent = 'Error opening side panel';
+        }
     });
 });

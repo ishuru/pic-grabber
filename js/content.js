@@ -66,6 +66,8 @@ class ImageDownloader {
                 } else {
                     this.scanAllImages();
                 }
+            } else if (message.type === 'scanImagesForSidebar') {
+                this.scanImagesForSidebar();
             }
         });
     }
@@ -252,7 +254,7 @@ class ImageDownloader {
      */
     processBackgroundImage(element) {
         const bgImage = window.getComputedStyle(element).backgroundImage;
-        const urls = bgImage.match(/url\("?(.*?)["']?\)/g) || [];
+        const urls = bgImage.match(/url\("?(.*?\.(?:jpg|jpeg|png|gif|webp|svg|avif))["']?\)/g) || [];
         urls.forEach(url => {
             const cleanUrl = url.slice(4, -1).replace(/["']/g, "");
             this.createDownloadButton(element, cleanUrl);
@@ -481,6 +483,96 @@ class ImageDownloader {
         if (this.processedElements.has(element)) return;
         this.processedElements.add(element);
         this.createDownloadButton(element, base64Src);
+    }
+
+    /**
+     * Scans images specifically for the sidebar view
+     */
+    async scanImagesForSidebar() {
+        console.log("Starting image scan for sidebar...");
+        chrome.runtime.sendMessage({ type: 'clearImages' });
+
+        const processImageForSidebar = async (element, src) => {
+            try {
+                if (!src || !ImageUtils.isPossibleImageSource(src)) return;
+
+                // Get image dimensions
+                let dimensions = 'Unknown';
+                if (element instanceof HTMLImageElement && element.complete) {
+                    dimensions = `${element.naturalWidth}x${element.naturalHeight}`;
+                }
+
+                const imageData = {
+                    url: src,
+                    filename: ImageUtils.generateFileName(src),
+                    dimensions: dimensions
+                };
+
+                chrome.runtime.sendMessage({
+                    type: 'newImage',
+                    data: imageData
+                });
+            } catch (error) {
+                console.error('Error processing image for sidebar:', error);
+            }
+        };
+
+        // Process all images in the document
+        const images = document.getElementsByTagName('img');
+        for (const img of images) {
+            if (ImageUtils.isValidImage(img)) {
+                await processImageForSidebar(img, img.src);
+                if (img.srcset) {
+                    const srcset = img.srcset.split(',').map(src => src.trim().split(' ')[0]);
+                    for (const src of srcset) {
+                        await processImageForSidebar(img, src);
+                    }
+                }
+            }
+        }
+
+        // Process background images
+        const elements = document.getElementsByTagName('*');
+        for (const element of elements) {
+            const style = window.getComputedStyle(element);
+            const bgImage = style.backgroundImage;
+            if (bgImage && bgImage !== 'none') {
+                const urls = bgImage.match(/url\(['"]?(.*?)['"]?\)/g);
+                if (urls) {
+                    for (const url of urls) {
+                        const cleanUrl = url.slice(4, -1).replace(/["']/g, "");
+                        await processImageForSidebar(element, cleanUrl);
+                    }
+                }
+            }
+        }
+
+        // Process canvas elements
+        const canvases = document.getElementsByTagName('canvas');
+        for (const canvas of canvases) {
+            try {
+                const dataUrl = canvas.toDataURL('image/png');
+                await processImageForSidebar(canvas, dataUrl);
+            } catch (e) {
+                console.warn('Canvas may be tainted:', e);
+            }
+        }
+
+        // Process SVG elements
+        const svgs = document.getElementsByTagName('svg');
+        for (const svg of svgs) {
+            try {
+                const svgData = new XMLSerializer().serializeToString(svg);
+                const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+                const url = URL.createObjectURL(svgBlob);
+                await processImageForSidebar(svg, url);
+            } catch (e) {
+                console.warn('Error processing SVG:', e);
+            }
+        }
+
+        console.log("Finished scanning images for sidebar");
+        chrome.runtime.sendMessage({ type: 'scanComplete' });
     }
 }
 

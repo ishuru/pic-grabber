@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Pic-Grabber Sidebar</title>
+    <link rel="stylesheet" href="css/sidebar.css">
+</head>
+<body>
+    <div class="sidebar-container">
+        <div class="sidebar-header">
+            <h1>Images on Page</h1>
+            <div class="header-actions">
+                <button id="refreshImages" class="icon-button" title="Refresh Images">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 12a9 9 0 11-9-9c2.52 0 4.85.83 6.72 2.24"></path>
+                        <path d="M21 3v9h-9"></path>
+                    </svg>
+                </button>
+                <button id="downloadAll" class="icon-button" title="Download All">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7 10 12 15 17 10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                </button>
+                <button id="closeSidebar" class="icon-button" title="Close Sidebar">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="search-container">
+            <input type="text" id="searchImages" placeholder="Search images..." class="search-input">
+        </div>
+        <div class="images-container" id="imagesContainer">
+            <!-- Images will be dynamically added here -->
+            <div class="loading-message">Scanning for images...</div>
+        </div>
+    </div>
+    <script src="js/utils.js"></script>
+    <script src="js/sidebar.js"></script>
+</body>
+</html>

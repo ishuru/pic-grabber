@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Pic-Grabber",
-    "version": "1.5",
+    "version": "1.6",
     "description": "Download any image from any webpage, including protected and dynamically loaded images",
     "icons": {
         "16": "assets/download-16.png",
@@ -13,7 +13,9 @@
         "scripting",
         "activeTab",
         "webRequest",
-        "storage"
+        "storage",
+        "tabs",
+        "sidePanel"
     ],
     "host_permissions": [
         "<all_urls>"
@@ -29,6 +31,13 @@
             "run_at": "document_start"
         }
     ],
+    "side_panel": {
+        "default_path": "sidebar.html"
+    },
+    "web_accessible_resources": [{
+        "resources": ["sidebar.html", "css/sidebar.css", "js/sidebar.js"],
+        "matches": ["<all_urls>"]
+    }],
     "action": {
         "default_title": "Pic-Grabber",
         "default_popup": "popup.html",
