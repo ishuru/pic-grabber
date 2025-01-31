@@ -89,8 +89,29 @@ class SidebarManager {
     requestImageScan() {
         this.clearImages();
         this.updateLoadingState(true);
-        chrome.tabs.query({active: true, currentWindow: true}, (tabs) => {
-            chrome.tabs.sendMessage(tabs[0].id, { type: 'scanImagesForSidebar' });
+        
+        // Get the current tab from which the sidebar was opened
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            const currentTab = tabs[0];
+            if (currentTab) {
+                // Send message to the content script in the active tab
+                chrome.tabs.sendMessage(currentTab.id, { 
+                    type: 'scanImagesForSidebar' 
+                }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        console.error('Error sending message:', chrome.runtime.lastError);
+                        this.updateLoadingState(false);
+                        const loadingMessage = this.imagesContainer.querySelector('.loading-message');
+                        if (loadingMessage) {
+                            loadingMessage.textContent = 'Failed to scan images. Please try again.';
+                            loadingMessage.className = 'no-images';
+                        }
+                    }
+                });
+            } else {
+                console.error('No active tab found');
+                this.updateLoadingState(false);
+            }
         });
     }
 
