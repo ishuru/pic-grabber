@@ -5,6 +5,8 @@ class SidebarManager {
     constructor() {
         this.images = new Map();
         this.port = null;
+        this.currentFilter = 'all';
+        this.currentSort = 'name';
         this.initializeElements();
         this.setupEventListeners();
         this.setupPortConnection();
@@ -19,6 +21,8 @@ class SidebarManager {
         this.refreshButton = document.getElementById('refreshImages');
         this.downloadAllButton = document.getElementById('downloadAll');
         this.closeButton = document.getElementById('closeSidebar');
+        this.sortBySelect = document.getElementById('sortBy');
+        this.filterChips = document.querySelectorAll('.filter-chip');
     }
 
     /**
@@ -29,6 +33,22 @@ class SidebarManager {
         this.refreshButton.addEventListener('click', () => this.requestImageScan());
         this.downloadAllButton.addEventListener('click', () => this.downloadAllImages());
         this.closeButton.addEventListener('click', () => window.close());
+
+        // Filter chip click handlers
+        this.filterChips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                this.filterChips.forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                this.currentFilter = chip.dataset.type;
+                this.filterAndSortImages();
+            });
+        });
+
+        // Sort select handler
+        this.sortBySelect.addEventListener('change', () => {
+            this.currentSort = this.sortBySelect.value;
+            this.filterAndSortImages();
+        });
 
         // Handle keyboard shortcuts
         document.addEventListener('keydown', (e) => {
@@ -117,6 +137,7 @@ class SidebarManager {
 
         const imageElement = document.createElement('div');
         imageElement.className = 'image-item';
+        imageElement.dataset.type = this.getImageType(imageData.filename);
         imageElement.innerHTML = `
             <img src="${imageData.url}" class="image-preview" alt="Preview">
             <div class="image-info">
@@ -137,6 +158,65 @@ class SidebarManager {
         downloadButton.addEventListener('click', () => this.downloadImage(imageData));
 
         this.imagesContainer.appendChild(imageElement);
+        this.filterAndSortImages();
+    }
+
+    /**
+     * Get the type of image from its filename
+     * @param {string} filename - The filename to check
+     * @returns {string} The image type (jpg, png, etc.)
+     */
+    getImageType(filename) {
+        const extension = filename.split('.').pop().toLowerCase();
+        return ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'avif'].includes(extension) ? extension : 'other';
+    }
+
+    /**
+     * Filter and sort images based on current settings
+     */
+    filterAndSortImages() {
+        const searchTerm = this.searchInput.value.toLowerCase();
+        const items = Array.from(this.imagesContainer.getElementsByClassName('image-item'));
+        
+        items.forEach(item => {
+            const filename = item.querySelector('.image-filename').textContent.toLowerCase();
+            const type = item.dataset.type;
+            const matchesSearch = filename.includes(searchTerm);
+            const matchesFilter = this.currentFilter === 'all' || 
+                                (this.currentFilter === 'jpg' && (type === 'jpg' || type === 'jpeg')) ||
+                                type === this.currentFilter;
+            
+            item.style.display = matchesSearch && matchesFilter ? '' : 'none';
+        });
+
+        // Sort visible items
+        const sortedItems = items
+            .filter(item => item.style.display !== 'none')
+            .sort((a, b) => {
+                const aFilename = a.querySelector('.image-filename').textContent;
+                const bFilename = b.querySelector('.image-filename').textContent;
+                const aType = a.dataset.type;
+                const bType = b.dataset.type;
+                const aDimensions = a.querySelector('.image-dimensions').textContent;
+                const bDimensions = b.querySelector('.image-dimensions').textContent;
+
+                switch (this.currentSort) {
+                    case 'name':
+                        return aFilename.localeCompare(bFilename);
+                    case 'type':
+                        return aType.localeCompare(bType) || aFilename.localeCompare(bFilename);
+                    case 'size':
+                        // Extract dimensions and compare
+                        const [aWidth] = aDimensions.split('x').map(Number);
+                        const [bWidth] = bDimensions.split('x').map(Number);
+                        return (bWidth || 0) - (aWidth || 0);
+                    default:
+                        return 0;
+                }
+            });
+
+        // Reorder DOM elements
+        sortedItems.forEach(item => this.imagesContainer.appendChild(item));
     }
 
     /**
