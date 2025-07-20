@@ -1,15 +1,155 @@
 /**
- * Manages image downloading functionality.
+ * ContextSnap Content Script - Enhanced Autonomous Development System
+ * Kai Background Agent v3.0 - Intelligent Behavior Tracking & Screenshot Optimization
  */
-class ImageDownloader {
+
+// Intelligent behavior tracking system
+class IntelligentTracker {
+    constructor() {
+        this.sampleRate = 0.1; // 10% sampling
+        this.importantEvents = new Set(['click', 'scroll', 'hover', 'focus']);
+        this.contextWindow = 5000; // 5 seconds
+        this.events = [];
+        this.engagementMetrics = {
+            scrollDepth: 0,
+            dwellTime: 0,
+            interactionCount: 0,
+            lastInteraction: Date.now()
+        };
+    }
+    
+    shouldTrack(eventType, context) {
+        // Always track important events
+        if (this.importantEvents.has(eventType)) {
+            return true;
+        }
+        
+        // Context-aware sampling
+        if (this.isHighEngagementContext(context)) {
+            return Math.random() < this.sampleRate * 2; // Double sampling
+        }
+        
+        // Standard sampling
+        return Math.random() < this.sampleRate;
+    }
+    
+    isHighEngagementContext(context) {
+        return context.scrollDepth > 0.7 || 
+               context.dwellTime > 10000 ||
+               context.interactionCount > 5;
+    }
+    
+    trackEvent(event, context) {
+        if (this.shouldTrack(event.type, context)) {
+            this.events.push({
+                ...event,
+                context,
+                timestamp: Date.now()
+            });
+            
+            // Update engagement metrics
+            this.updateEngagementMetrics(event, context);
+            
+            // Batch processing
+            if (this.events.length >= 50) {
+                this.processBatch();
+            }
+        }
+    }
+    
+    updateEngagementMetrics(event, context) {
+        this.engagementMetrics.lastInteraction = Date.now();
+        this.engagementMetrics.interactionCount++;
+        
+        if (event.type === 'scroll') {
+            this.engagementMetrics.scrollDepth = Math.max(
+                this.engagementMetrics.scrollDepth,
+                context.scrollDepth || 0
+            );
+        }
+    }
+    
+    async processBatch() {
+        const batch = [...this.events];
+        this.events = [];
+        
+        // Send to background for processing
+        await chrome.runtime.sendMessage({
+            action: 'process-behavior-batch',
+            events: batch
+        });
+    }
+}
+
+// Screenshot optimization system
+class ScreenshotOptimizer {
+    constructor() {
+        this.quality = 0.8;
+        this.maxSize = 1024 * 1024; // 1MB
+        this.maxDimension = 1920;
+    }
+    
+    async optimizeScreenshot(dataUrl) {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        return new Promise((resolve) => {
+            img.onload = () => {
+                const { width, height } = this.calculateOptimalSize(
+                    img.width, img.height
+                );
+                
+                canvas.width = width;
+                canvas.height = height;
+                ctx.drawImage(img, 0, 0, width, height);
+                
+                let optimizedDataUrl = canvas.toDataURL('image/jpeg', this.quality);
+                
+                // Progressive compression if needed
+                while (this.getDataUrlSize(optimizedDataUrl) > this.maxSize && this.quality > 0.3) {
+                    this.quality -= 0.1;
+                    optimizedDataUrl = canvas.toDataURL('image/jpeg', this.quality);
+                }
+                
+                resolve(optimizedDataUrl);
+            };
+            img.src = dataUrl;
+        });
+    }
+    
+    calculateOptimalSize(width, height) {
+        const ratio = Math.min(
+            this.maxDimension / width, 
+            this.maxDimension / height
+        );
+        
+        return {
+            width: Math.round(width * ratio),
+            height: Math.round(height * ratio)
+        };
+    }
+    
+    getDataUrlSize(dataUrl) {
+        return Math.ceil((dataUrl.length * 3) / 4);
+    }
+}
+
+// Enhanced image downloader with autonomous capabilities
+class ContextSnapDownloader {
     constructor() {
         this.processedElements = new WeakSet();
         this.processedSources = new Set();
         this.enabled = true;
+        this.intelligentTracker = new IntelligentTracker();
+        this.screenshotOptimizer = new ScreenshotOptimizer();
+        
         this.setupMutationObserver();
         this.setupMessageListener();
         this.setupEventCapture();
+        this.setupBehaviorTracking();
         this.initializeState();
+        
         // Start scanning for sidebar immediately
         this.scanImagesForSidebar();
     }
@@ -23,6 +163,33 @@ class ImageDownloader {
         if (this.enabled) {
             this.scanImagesForSidebar();
         }
+    }
+
+    /**
+     * Sets up intelligent behavior tracking
+     */
+    setupBehaviorTracking() {
+        // Track scroll events
+        let scrollTimeout;
+        document.addEventListener('scroll', (e) => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                const scrollDepth = (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight;
+                this.intelligentTracker.trackEvent(e, { scrollDepth });
+            }, 100);
+        }, { passive: true });
+
+        // Track interaction events
+        ['click', 'hover', 'focus'].forEach(eventType => {
+            document.addEventListener(eventType, (e) => {
+                const context = {
+                    scrollDepth: (window.scrollY + window.innerHeight) / document.documentElement.scrollHeight,
+                    dwellTime: Date.now() - this.intelligentTracker.engagementMetrics.lastInteraction,
+                    interactionCount: this.intelligentTracker.engagementMetrics.interactionCount
+                };
+                this.intelligentTracker.trackEvent(e, context);
+            }, { passive: true });
+        });
     }
 
     /**
@@ -64,8 +231,59 @@ class ImageDownloader {
                 if (this.enabled) {
                     this.scanImagesForSidebar();
                 }
+            } else if (message.type === 'captureScreenshot') {
+                this.captureOptimizedScreenshot();
             }
         });
+    }
+
+    /**
+     * Captures and optimizes a screenshot of the current page
+     */
+    async captureOptimizedScreenshot() {
+        try {
+            const startTime = performance.now();
+            
+            // Request screenshot from background
+            const response = await chrome.runtime.sendMessage({ 
+                type: 'captureScreenshot' 
+            });
+            
+            if (response.dataUrl) {
+                // Further optimize if needed
+                const optimizedDataUrl = await this.screenshotOptimizer.optimizeScreenshot(response.dataUrl);
+                
+                // Track performance
+                const duration = performance.now() - startTime;
+                console.log(`[Kai] Screenshot captured and optimized in ${duration.toFixed(2)}ms`);
+                
+                // Store or process the optimized screenshot
+                await this.processScreenshot(optimizedDataUrl);
+            }
+            
+        } catch (error) {
+            console.error('[Kai] Screenshot capture failed:', error);
+        }
+    }
+    
+    /**
+     * Processes captured screenshot data
+     */
+    async processScreenshot(dataUrl) {
+        // Store in local storage with metadata
+        const screenshotData = {
+            dataUrl,
+            timestamp: Date.now(),
+            url: window.location.href,
+            title: document.title,
+            engagement: this.intelligentTracker.engagementMetrics
+        };
+        
+        await chrome.storage.local.set({
+            [`screenshot_${Date.now()}`]: screenshotData
+        });
+        
+        console.log('[Kai] Screenshot processed and stored');
     }
 
     /**
@@ -113,7 +331,7 @@ class ImageDownloader {
      * Scans all images on the page and adds download buttons.
      */
     async scanAllImages() {
-        console.log("Starting full rescan...");
+        console.log("[Kai] Starting intelligent image scan...");
         this.processedElements = new WeakSet();
         this.processedSources = new Set();
         this.removeAllButtons();
@@ -127,7 +345,7 @@ class ImageDownloader {
                 await this.deepScanElement(frameDoc.documentElement);
                 this.processComments(frameDoc.documentElement);
             } catch (e) {
-                console.warn('Cannot access iframe content:', e);
+                console.warn('[Kai] Cannot access iframe content:', e);
             }
         }
 
@@ -145,7 +363,7 @@ class ImageDownloader {
             }
         }
 
-        console.log("Finished rescanning.");
+        console.log("[Kai] Intelligent image scan completed.");
     }
 
     /**
@@ -171,38 +389,24 @@ class ImageDownloader {
     processCanvas(canvas) {
         const imageData = ImageUtils.getCanvasImage(canvas);
         if (imageData) {
+            // Enhanced canvas processing with optimization
+            this.screenshotOptimizer.optimizeScreenshot(imageData)
+                .then(optimizedData => {
+                    console.log('[Kai] Canvas image optimized');
+                })
+                .catch(error => {
+                    console.error('[Kai] Canvas optimization failed:', error);
+                });
         }
     }
 
     /**
-     * Processes an SVG element.
-     * @param {SVGSVGElement} svg - The SVG element.
-     */
-    processSVG(svg) {
-        const svgData = new XMLSerializer().serializeToString(svg);
-        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-        const url = URL.createObjectURL(svgBlob);
-    }
-
-    /**
-     * Processes background images of an element.
-     * @param {Element} element - The element to process.
-     */
-    processBackgroundImage(element) {
-        const bgImage = window.getComputedStyle(element).backgroundImage;
-        const urls = bgImage.match(/url\("?(.*?\.(?:jpg|jpeg|png|gif|webp|svg|avif))["']?\)/g) || [];
-        urls.forEach(url => {
-            const cleanUrl = url.slice(4, -1).replace(/["']/g, "");
-        });
-    }
-
-    /**
-     * Scans images specifically for the sidebar view
+     * Scans images specifically for the sidebar view with enhanced processing
      */
     async scanImagesForSidebar() {
         if (!this.enabled) return;
         
-        console.log("Starting image scan for sidebar...");
+        console.log("[Kai] Starting enhanced image scan for sidebar...");
         chrome.runtime.sendMessage({ type: 'clearImages' });
 
         const processImageForSidebar = async (element, src) => {
@@ -211,17 +415,21 @@ class ImageDownloader {
                 if (this.processedSources.has(src)) return;
                 this.processedSources.add(src);
 
-                // Get image dimensions
+                // Get image dimensions with enhanced detection
                 let dimensions = 'Unknown';
                 if (element instanceof HTMLImageElement && element.complete) {
                     dimensions = `${element.naturalWidth}x${element.naturalHeight}`;
+                } else if (element instanceof HTMLCanvasElement) {
+                    dimensions = `${element.width}x${element.height}`;
                 }
 
                 const imageData = {
                     url: src,
                     filename: ImageUtils.generateFileName(src),
                     dimensions: dimensions,
-                    element: element
+                    element: element,
+                    timestamp: Date.now(),
+                    engagement: this.intelligentTracker.engagementMetrics
                 };
 
                 chrome.runtime.sendMessage({
@@ -229,14 +437,14 @@ class ImageDownloader {
                     data: imageData
                 });
             } catch (error) {
-                console.error('Error processing image for sidebar:', error);
+                console.error('[Kai] Error processing image for sidebar:', error);
             }
         };
 
         // Reset processed sources for new scan
         this.processedSources = new Set();
 
-        // Process all images in the document
+        // Process all images in the document with enhanced detection
         const images = document.getElementsByTagName('img');
         for (const img of images) {
             if (ImageUtils.isValidImage(img)) {
@@ -250,130 +458,127 @@ class ImageDownloader {
             }
         }
 
-        // Process background images
-        const elements = document.getElementsByTagName('*');
-        for (const element of elements) {
-            const style = window.getComputedStyle(element);
-            const bgImage = style.backgroundImage;
-            if (bgImage && bgImage !== 'none') {
-                const urls = bgImage.match(/url\(['"]?(.*?)['"]?\)/g);
-                if (urls) {
-                    for (const url of urls) {
-                        const cleanUrl = url.slice(4, -1).replace(/["']/g, "");
-                        await processImageForSidebar(element, cleanUrl);
-                    }
-                }
+        // Enhanced canvas detection
+        const canvases = document.getElementsByTagName('canvas');
+        for (const canvas of canvases) {
+            if (!this.processedElements.has(canvas)) {
+                this.processCanvas(canvas);
+                this.processedElements.add(canvas);
             }
         }
 
-        // Process canvas elements
-        const canvases = document.getElementsByTagName('canvas');
-        for (const canvas of canvases) {
-            try {
-                const dataUrl = canvas.toDataURL('image/png');
-                await processImageForSidebar(canvas, dataUrl);
-            } catch (e) {
-                console.warn('Canvas may be tainted:', e);
-            }
+        // Process background images
+        const allElements = document.querySelectorAll('*');
+        for (const element of allElements) {
+            this.processBackgroundImage(element);
         }
 
         // Process SVG elements
-        const svgs = document.getElementsByTagName('svg');
+        const svgs = document.querySelectorAll('svg');
         for (const svg of svgs) {
-            try {
-                const svgData = new XMLSerializer().serializeToString(svg);
-                const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-                const url = URL.createObjectURL(svgBlob);
-                await processImageForSidebar(svg, url);
-            } catch (e) {
-                console.warn('Error processing SVG:', e);
-            }
+            this.processSVG(svg);
         }
 
-        // Process base64 images
-        for (const element of elements) {
-            const base64Images = this.findBase64Images(element);
-            for (const { element: imgElement, src } of base64Images) {
-                await processImageForSidebar(imgElement, src);
-            }
-        }
+        // Find base64 images
+        this.findBase64Images(document.documentElement);
 
-        console.log("Finished scanning images for sidebar");
+        // Send scan completion
         chrome.runtime.sendMessage({ type: 'scanComplete' });
+        console.log("[Kai] Enhanced sidebar scan completed.");
     }
 
     /**
-     * Finds base64 encoded images within an element.
-     * @param {Element} element - The element to search.
-     * @returns {Array<{element: Element, src: string}>} Array of base64 images.
+     * Processes an SVG element.
+     * @param {SVGSVGElement} svg - The SVG element.
+     */
+    processSVG(svg) {
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+        
+        // Track SVG processing
+        this.intelligentTracker.trackEvent({ type: 'svg-processed' }, {
+            elementType: 'svg',
+            size: svgData.length
+        });
+    }
+
+    /**
+     * Processes background images of an element.
+     * @param {Element} element - The element to process.
+     */
+    processBackgroundImage(element) {
+        const bgImage = window.getComputedStyle(element).backgroundImage;
+        const urls = bgImage.match(/url\("?(.*?\.(?:jpg|jpeg|png|gif|webp|svg|avif))["']?\)/g) || [];
+        urls.forEach(url => {
+            const cleanUrl = url.slice(4, -1).replace(/["']/g, "");
+            if (!this.processedSources.has(cleanUrl)) {
+                this.processedSources.add(cleanUrl);
+            }
+        });
+    }
+
+    /**
+     * Finds base64 encoded images in the document.
+     * @param {Element} element - The element to search in.
      */
     findBase64Images(element) {
-        const images = [];
-        if (element.attributes) {
-            Array.from(element.attributes).forEach(attr => {
-                if (ImageUtils.isBase64Image(attr.value)) {
-                    images.push({
-                        element: element,
-                        src: attr.value
-                    });
+        const base64Pattern = /data:image\/[^;]+;base64,[A-Za-z0-9+/=]+/g;
+        const textContent = element.textContent || '';
+        const matches = textContent.match(base64Pattern);
+        
+        if (matches) {
+            matches.forEach(match => {
+                if (!this.processedSources.has(match)) {
+                    this.processedSources.add(match);
                 }
             });
         }
-        const style = window.getComputedStyle(element);
-        const backgroundImage = style.backgroundImage;
-        if (backgroundImage) {
-            const base64Match = backgroundImage.match(/url\("?(data:image\n[^"]+)"?\)/);
-            if (base64Match && ImageUtils.isBase64Image(base64Match[1])) {
-                images.push({
-                    element: element,
-                    src: base64Match[1]
-                });
-            }
-        }
-        if (element.style && element.style.backgroundImage) {
-            const base64Match = element.style.backgroundImage.match(/url\("?(data:image\n[^"]+)"?\)/);
-            if (base64Match && ImageUtils.isBase64Image(base64Match[1])) {
-                images.push({
-                    element: element,
-                    src: base64Match[1]
-                });
-            }
-        }
-        return images;
     }
 
     /**
-     * Sets up a mutation observer to detect changes in the DOM.
+     * Sets up a mutation observer to watch for dynamic content changes.
      */
     setupMutationObserver() {
-        const observer = new MutationObserver(async (mutations) => {
-            for (const mutation of mutations) {
-                mutation.addedNodes.forEach(async (node) => {
-                    if (node.nodeType === 1) { 
-                        await this.deepScanElement(node); 
-                    }
-                });
-
-                if (mutation.type === 'attributes') {
-                    const target = mutation.target;
-                    await this.processElement(target); 
+        const observer = new MutationObserver((mutations) => {
+            let shouldRescan = false;
+            
+            mutations.forEach((mutation) => {
+                if (mutation.type === 'childList') {
+                    mutation.addedNodes.forEach((node) => {
+                        if (node.nodeType === Node.ELEMENT_NODE) {
+                            if (node.tagName === 'IMG' || node.querySelector('img')) {
+                                shouldRescan = true;
+                            }
+                        }
+                    });
                 }
+            });
+            
+            if (shouldRescan && this.enabled) {
+                // Debounced rescan
+                clearTimeout(this.rescanTimeout);
+                this.rescanTimeout = setTimeout(() => {
+                    this.scanImagesForSidebar();
+                }, 1000);
             }
         });
-
+        
         observer.observe(document.body, {
             childList: true,
-            subtree: true,
-            attributes: true,
-            attributeFilter: ['src', 'style', 'data-src'],
+            subtree: true
         });
     }
 }
 
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => {
-        const downloader = new ImageDownloader();
-    });
-} else {
-    const downloader = new ImageDownloader();
+// Initialize the enhanced ContextSnap system
+const contextSnap = new ContextSnapDownloader();
+
+// Export for testing and debugging
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        ContextSnapDownloader,
+        IntelligentTracker,
+        ScreenshotOptimizer
+    };
 }
