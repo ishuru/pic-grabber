@@ -1,0 +1,51 @@
+{
+    "manifest_version": 3,
+    "name": "ContextSnap",
+    "version": "1.0.0",
+    "description": "Advanced screenshot and context capture extension with intelligent behavior tracking and autonomous optimization",
+    "icons": {
+        "16": "assets/download-16.png",
+        "32": "assets/download-32.png",
+        "48": "assets/download-48.png"
+    },
+    "permissions": [
+        "downloads",
+        "scripting",
+        "activeTab",
+        "webRequest",
+        "storage",
+        "tabs",
+        "sidePanel",
+        "alarms"
+    ],
+    "host_permissions": [
+        "<all_urls>"
+    ],
+    "background": {
+        "service_worker": "js/background.js"
+    },
+    "content_scripts": [
+        {
+            "matches": ["<all_urls>"],
+            "css": ["css/styles.css"],
+            "js": ["js/utils.js", "js/content.js"],
+            "run_at": "document_start"
+        }
+    ],
+    "side_panel": {
+        "default_path": "sidebar.html"
+    },
+    "web_accessible_resources": [{
+        "resources": ["sidebar.html", "css/sidebar.css", "js/sidebar.js"],
+        "matches": ["<all_urls>"]
+    }],
+    "action": {
+        "default_title": "ContextSnap",
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "assets/download-16.png",
+            "32": "assets/download-32.png",
+            "48": "assets/download-48.png"
+        }
+    }
+}

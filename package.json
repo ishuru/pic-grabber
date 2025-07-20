@@ -44,20 +44,24 @@
   },
   "homepage": "https://github.com/contextsnap/contextsnap#readme",
   "devDependencies": {
+    "@babel/core": "^7.28.0",
+    "@babel/preset-env": "^7.28.0",
     "@types/chrome": "^0.0.254",
     "@types/jest": "^29.5.8",
     "@typescript-eslint/eslint-plugin": "^6.13.1",
     "@typescript-eslint/parser": "^6.13.1",
+    "babel-loader": "^10.0.0",
+    "css-loader": "^7.1.2",
     "eslint": "^8.54.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-plugin-import": "^2.29.0",
     "jest": "^29.7.0",
     "prettier": "^3.1.0",
+    "style-loader": "^4.0.0",
     "typescript": "^5.3.2",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
   },
-  "dependencies": {},
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=9.0.0"
@@ -65,12 +69,13 @@
   "browserslist": [
     "Chrome >= 88",
     "Edge >= 88",
-    "Brave >= 1.0",
     "Opera >= 74"
   ],
   "jest": {
     "testEnvironment": "jsdom",
-    "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ],
     "collectCoverageFrom": [
       "js/**/*.js",
       "!js/utils.js",
@@ -87,8 +92,7 @@
   },
   "eslintConfig": {
     "extends": [
-      "airbnb-base",
-      "@typescript-eslint/recommended"
+      "airbnb-base"
     ],
     "env": {
       "browser": true,

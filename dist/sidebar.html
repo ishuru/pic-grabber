@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Image Sidebar</title>
+    <link rel="stylesheet" href="css/sidebar.css">
+</head>
+<body>
+    <div class="sidebar-container">
+        <div class="sidebar-header">
+            <div class="header-top">
+                <button id="closeSidebar" title="Close Sidebar">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="action-buttons">
+                    <button id="refreshImages" title="Refresh Images">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M23 4v6h-6M1 20v-6h6"/>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                        </svg>
+                        Refresh
+                    </button>
+                    <button id="downloadAll" title="Download All Images">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        Download All
+                    </button>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="search-container">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="text" id="searchImages" placeholder="Search images...">
+                </div>
+                
+                <div class="filter-controls">
+                    <div class="filter-group">
+                        <div class="filter-chip active" data-type="all">All</div>
+                        <div class="filter-chip" data-type="jpg">JPG</div>
+                        <div class="filter-chip" data-type="png">PNG</div>
+                        <div class="filter-chip" data-type="svg">SVG</div>
+                        <div class="filter-chip" data-type="gif">GIF</div>
+                    </div>
+                    <select id="sortBy">
+                        <option value="name">Sort by name</option>
+                        <option value="size">Sort by size</option>
+                        <option value="type">Sort by type</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="imagesContainer" class="images-container">
+            <!-- Images will be dynamically added here -->
+            <div class="loading-message">Scanning for images...</div>
+        </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/sidebar.js"></script>
+</body>
+</html>

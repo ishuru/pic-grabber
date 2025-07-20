@@ -17,7 +17,7 @@ const ImageUtils = {
     try {
       const urlObj = new URL(url);
       const pathSegments = urlObj.pathname.split('/');
-      let fileName = pathSegments[pathSegments.length - 1];
+      const fileName = pathSegments[pathSegments.length - 1];
 
       if (!fileName.match(/\.(jpg|jpeg|png|gif|webp|svg|avif|bmp|ico|tiff|heic|jfif)$/i)) {
         return `image_${Date.now()}.png`;
@@ -81,7 +81,7 @@ const ImageUtils = {
 
       const response = await fetch(url, {
         mode: 'no-cors',
-        credentials: 'include'
+        credentials: 'include',
       });
       const blob = await response.blob();
       return URL.createObjectURL(blob);
@@ -96,12 +96,10 @@ const ImageUtils = {
    * @param {HTMLImageElement} img - Image element to check.
    * @returns {boolean} Whether the image is valid.
    */
-  isValidImage: (img) => {
-    return img.complete &&
-           img.naturalWidth !== 0 &&
-           img.naturalHeight !== 0 &&
-           !img.classList.contains('download-icon');
-  },
+  isValidImage: (img) => img.complete
+           && img.naturalWidth !== 0
+           && img.naturalHeight !== 0
+           && !img.classList.contains('download-icon'),
 
   /**
    * Gets all possible image sources from an element.
@@ -116,15 +114,15 @@ const ImageUtils = {
     const bgImage = window.getComputedStyle(element).backgroundImage;
     if (bgImage && bgImage !== 'none') {
       const urls = bgImage.match(/url\(['"]?(.*?)['"]?\)/g) || [];
-      urls.forEach(url => sources.add(url.slice(4, -1).replace(/['"]/g, '')));
+      urls.forEach((url) => sources.add(url.slice(4, -1).replace(/['"]/g, '')));
     }
 
     if (element.srcset) {
-      const srcset = element.srcset.split(',').map(src => src.trim().split(' ')[0]);
-      srcset.forEach(src => sources.add(src));
+      const srcset = element.srcset.split(',').map((src) => src.trim().split(' ')[0]);
+      srcset.forEach((src) => sources.add(src));
     }
 
-    ['data-src', 'data-original', 'data-lazy', 'data-load'].forEach(attr => {
+    ['data-src', 'data-original', 'data-lazy', 'data-load'].forEach((attr) => {
       const value = element.getAttribute(attr);
       if (value) sources.add(value);
     });
@@ -151,14 +149,12 @@ const ImageUtils = {
    * @param {Element} element - Element to check.
    * @returns {boolean} Whether element is image-related.
    */
-  isImageElement: (element) => {
-    return (
-      element.tagName === 'IMG' ||
-      element.tagName === 'CANVAS' ||
-      element.tagName === 'SVG' ||
-      window.getComputedStyle(element).backgroundImage !== 'none'
-    );
-  },
+  isImageElement: (element) => (
+    element.tagName === 'IMG'
+      || element.tagName === 'CANVAS'
+      || element.tagName === 'SVG'
+      || window.getComputedStyle(element).backgroundImage !== 'none'
+  ),
 
   /**
    * Gets MIME type from URL or data URI.
@@ -172,18 +168,18 @@ const ImageUtils = {
 
     const extension = url.split('.').pop().toLowerCase();
     const mimeTypes = {
-      'jpg': 'image/jpeg',
-      'jpeg': 'image/jpeg',
-      'png': 'image/png',
-      'gif': 'image/gif',
-      'webp': 'image/webp',
-      'svg': 'image/svg+xml',
-      'avif': 'image/avif',
-      'bmp': 'image/bmp',
-      'ico': 'image/x-icon',
-      'tiff': 'image/tiff',
-      'heic': 'image/heic',
-      'jfif': 'image/jpeg'
+      jpg: 'image/jpeg',
+      jpeg: 'image/jpeg',
+      png: 'image/png',
+      gif: 'image/gif',
+      webp: 'image/webp',
+      svg: 'image/svg+xml',
+      avif: 'image/avif',
+      bmp: 'image/bmp',
+      ico: 'image/x-icon',
+      tiff: 'image/tiff',
+      heic: 'image/heic',
+      jfif: 'image/jpeg',
     };
 
     return mimeTypes[extension] || 'image/webp';
@@ -199,8 +195,8 @@ const ImageUtils = {
       const response = await fetch(url, {
         mode: 'cors',
         headers: {
-          'Accept': 'image/webp,image/apng,image/*,*/*'
-        }
+          Accept: 'image/webp,image/apng,image/*,*/*',
+        },
       });
       return await response.blob();
     } catch (e) {
@@ -208,13 +204,13 @@ const ImageUtils = {
         chrome.runtime.sendMessage(
           {
             type: 'fetchImage',
-            url: url,
-            mimeType: ImageUtils.getMimeType(url)
+            url,
+            mimeType: ImageUtils.getMimeType(url),
           },
-          response => {
+          (response) => {
             if (response.error) reject(response.error);
             else resolve(response.blob);
-          }
+          },
         );
       });
     }
@@ -242,15 +238,15 @@ const ImageUtils = {
       'src', 'data-src', 'data-original', 'data-lazy', 'data-load',
       'data-image', 'data-original-src', 'data-hi-res-src', 'data-lazy-src',
       'data-actual-src', 'data-full-src', 'data-bg', 'data-background',
-      'data-img', 'data-zoom-image', 'data-srcset', 'srcset'
+      'data-img', 'data-zoom-image', 'data-srcset', 'srcset',
     ];
 
     if (element.attributes) {
-      Array.from(element.attributes).forEach(attr => {
+      Array.from(element.attributes).forEach((attr) => {
         const value = attr.value.trim();
-        if (value && (value.match(/\.(jpg|jpeg|png|gif|webp|svg|avif)$/i) ||
-            value.startsWith('data:image/') ||
-            value.match(/^blob:/i))) {
+        if (value && (value.match(/\.(jpg|jpeg|png|gif|webp|svg|avif)$/i)
+            || value.startsWith('data:image/')
+            || value.match(/^blob:/i))) {
           sources.add(value);
         }
       });
@@ -258,7 +254,7 @@ const ImageUtils = {
 
     if (element.style && element.style.backgroundImage) {
       const urls = element.style.backgroundImage.match(/url\(['"]?([^'"]+)['"]?\)/g) || [];
-      urls.forEach(url => {
+      urls.forEach((url) => {
         sources.add(url.slice(4, -1).replace(/['"]/g, ''));
       });
     }
@@ -266,7 +262,7 @@ const ImageUtils = {
     const computedStyle = window.getComputedStyle(element);
     if (computedStyle.backgroundImage !== 'none') {
       const urls = computedStyle.backgroundImage.match(/url\(['"]?([^'"]+)['"]?\)/g) || [];
-      urls.forEach(url => {
+      urls.forEach((url) => {
         sources.add(url.slice(4, -1).replace(/['"]/g, ''));
       });
     }
@@ -281,11 +277,11 @@ const ImageUtils = {
    */
   isPossibleImageSource: (str) => {
     if (!str) return false;
-    return str.match(/\.(jpg|jpeg|png|gif|webp|svg|avif)$/i) ||
-           str.startsWith('data:image/') ||
-           str.match(/^blob:/i) ||
-           str.match(/^https?:\/\/[^/]+\/[^?]+\?(.*&)?image/i);
-  }
+    return str.match(/\.(jpg|jpeg|png|gif|webp|svg|avif)$/i)
+           || str.startsWith('data:image/')
+           || str.match(/^blob:/i)
+           || str.match(/^https?:\/\/[^/]+\/[^?]+\?(.*&)?image/i);
+  },
 };
 
 window.ImageUtils = ImageUtils;
